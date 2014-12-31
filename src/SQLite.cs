@@ -54,6 +54,7 @@ using Sqlite3 = SQLitePCL.raw;
 #else
 using Sqlite3DatabaseHandle = System.IntPtr;
 using Sqlite3Statement = System.IntPtr;
+using System.Dynamic;
 #endif
 
 namespace SQLite
@@ -717,10 +718,10 @@ namespace SQLite
         /// <returns>
         /// An enumerable with one result for each row returned by the query.
         /// </returns>
-        public List<Dictionary<string, object>> DynamicQuery(string query, params object[] args)
+        public List<ExpandoObject> ExpandoQuery(string query, params object[] args)
         {
             var cmd = CreateCommand(query, args);
-            return cmd.ExecuteDynamicQuery();
+            return cmd.ExecuteExpandoQuery();
         }
 
 		/// <summary>
@@ -2119,9 +2120,9 @@ namespace SQLite
             return ExecuteDeferredQuery<T>(_conn.GetMapping(typeof(T))).ToList();
         }
 
-        public List<Dictionary<string, object>> ExecuteDynamicQuery()
+        public List<ExpandoObject> ExecuteExpandoQuery()
         {
-            return ExecuteDeferredDynamicQuery().ToList();
+            return ExecuteDeferredExpandoQuery().ToList();
         }
 
         public List<T> ExecuteQuery<T>(TableMapping map)
@@ -2185,7 +2186,7 @@ namespace SQLite
             }
         }
 
-        public IEnumerable<Dictionary<string, object>> ExecuteDeferredDynamicQuery()
+        public IEnumerable<ExpandoObject> ExecuteDeferredExpandoQuery()
         {
             if (_conn.Trace)
             {
@@ -2205,15 +2206,15 @@ namespace SQLite
 
                 while (SQLite3.Step(stmt) == SQLite3.Result.Row)
                 {
-                    var rowDict = new Dictionary<string, object>();
+                    var obj = new ExpandoObject() as IDictionary<string, object>;
                     for (int i = 0; i < colNames.Count; i++)
                     {
                         var colType = SQLite3.ColumnType(stmt, i);
                         var val = DynamicReadCol(stmt, i, colType);
-                        rowDict.Add(colNames[i], val);
+                        obj.Add(colNames[i], val);
                     }
-                    OnInstanceCreated(rowDict);
-                    yield return rowDict;
+                    OnInstanceCreated(obj);
+                    yield return (ExpandoObject)obj;
                 }
             }
             finally
