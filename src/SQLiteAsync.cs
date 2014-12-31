@@ -30,6 +30,7 @@ using System.Threading.Tasks;
 
 namespace SQLite
 {
+    //TODO: msl - add async DynamicQuery method
 	public partial class SQLiteAsyncConnection
 	{
 		SQLiteConnectionString _connectionString;
